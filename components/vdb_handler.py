@@ -1,7 +1,8 @@
 # vdb_handler.py  ── Python ≥3.9, pinecone ≥6, openai ≥1
 from __future__ import annotations
 
-import os, uuid
+import os
+import uuid
 from typing import List
 
 import openai
