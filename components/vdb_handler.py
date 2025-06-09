@@ -1,59 +1,66 @@
-import os
-from datetime import datetime, timezone
-from uuid import uuid4
-from typing import Dict, List, Any
+# vdb_handler.py  ── Python ≥3.9, pinecone ≥6, openai ≥1
+from __future__ import annotations
+
+import os, uuid
+from typing import List
 
 import openai
-from pinecone import Pinecone
+from dotenv import load_dotenv
+from pinecone import Pinecone, ServerlessSpec
+
+# BASIC STUFF & CONFIGS
+load_dotenv()
+
+OPENAI_API_KEY   = os.getenv("OPENAI_API_KEY")
+PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
+
+if not (OPENAI_API_KEY and PINECONE_API_KEY):
+    raise RuntimeError("Set OPENAI_API_KEY and PINECONE_API_KEY first")
+
+openai.api_key = OPENAI_API_KEY
 
 
-EMBED_MODEL = "text-embedding-3-small"
-openai.api_key = os.getenv("OPENAI_API_KEY")
+INDEX_NAME = "memoria-embeddings"
+DIMENSION  = 1536
+NAMESPACE  = "ns1"
 
+pc = Pinecone(api_key=PINECONE_API_KEY)
 
+if INDEX_NAME not in pc.list_indexes().names():
+    pc.create_index(
+        name=INDEX_NAME,
+        dimension=DIMENSION,
+        metric="cosine",
+        spec=ServerlessSpec(cloud="aws", region="us-east-1"),
+    )
+
+index = pc.Index(INDEX_NAME)
+
+# Function that turns text into vector
 def embed(text: str) -> List[float]:
-    response = openai.embeddings.create(
-        model=EMBED_MODEL,
+    return openai.embeddings.create(
+        model="text-embedding-3-small",
         input=[text],
-    )
-    return response.data[0].embedding
+    ).data[0].embedding
 
-
-PC_API_KEY = os.getenv("PINECONE_API_KEY")
-INDEX_HOST = os.getenv("PINECONE_INDEX_HOST")
-NAMESPACE  = os.getenv("PINECONE_NAMESPACE", "__default__")
-
-if not (PC_API_KEY and INDEX_HOST):
-    raise RuntimeError(
-        "Set PINECONE_API_KEY and PINECONE_INDEX_HOST in the environment"
-    )
-
-pc = Pinecone(api_key=PC_API_KEY)                   #
-index = pc.Index(host=INDEX_HOST)
-
-def upsert_message(text: str, role: str = "user") -> str:
+# Embed + upload to vdb
+def upsert_text(text: str, namespace: str = NAMESPACE) -> str:
     vector = embed(text)
-    vector_id = str(uuid4())
-
-    metadata: Dict[str, Any] = {
-        "role": role,
-        "message": text,
-        "ts": datetime.now(timezone.utc).isoformat(),
-        "model": EMBED_MODEL,
-
-    }
+    vector_id = str(uuid.uuid4())
 
     index.upsert(
         vectors=[{
-            "id": vector_id,
+            "id":     vector_id,
             "values": vector,
-            "metadata": metadata,
+            "metadata": {"text": text},   # add anything else you like
         }],
-        namespace=NAMESPACE,
+        namespace=namespace,
     )
     return vector_id
 
 if __name__ == "__main__":
-    print(upsert_message("hello"))
+    vid = upsert_text("hello, memory system!")
+    print(f"✅  Upserted vector {vid}")
+
 
 
