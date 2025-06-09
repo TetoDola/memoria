@@ -52,7 +52,7 @@ def upsert_text(text: str, namespace: str = NAMESPACE) -> str:
         vectors=[{
             "id":     vector_id,
             "values": vector,
-            "metadata": {"text": text},   # add anything else you like
+            "metadata": {"text": text},
         }],
         namespace=namespace,
     )
