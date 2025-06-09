@@ -60,7 +60,7 @@ def upsert_text(text: str, namespace: str = NAMESPACE) -> str:
 
 if __name__ == "__main__":
     vid = upsert_text("hello, memory system!")
-    print(f"✅  Upserted vector {vid}")
+    print(f"✅  uploaded vector {vid}")
 
 
 
