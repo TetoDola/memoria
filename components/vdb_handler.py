@@ -20,7 +20,7 @@ class VDBHandler:
             namespace: str = "ns1"
     ):
 
-        #  API Key validation
+        #  API Key validations
         if not (openai_api_key and pinecone_api_key):
             raise ValueError("OpenAI and Pinecone API keys must be provided.")
 
