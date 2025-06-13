@@ -1,3 +1,9 @@
+# use djanngo models
+# change to postgres for rag from pinecone
+#
+
+
+
 import os
 import uuid
 from typing import List, Dict, Any
